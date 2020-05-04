@@ -1,6 +1,10 @@
+const functions = require('firebase-functions');
+
+// // Create and Deploy Your First Cloud Functions
+// // https://firebase.google.com/docs/functions/write-firebase-functions
+//
 const express = require("express");
 const app = express();
-const port = process.env.PORT || "8000";
 var firebase = require("firebase");
 require("firebase/firestore");
 
@@ -21,6 +25,15 @@ const firebaseApp = firebase.initializeApp(firebaseConfig);
 const db = firebaseApp.firestore();
 
 app.use(express.urlencoded());
+app.use((req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', ' https://us-central1-short-url-app.cloudfunctions.net/app');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
+  res.setHeader(
+    'Access-Control-Allow-Headers',
+    'Origin, X-Requested-With, Content-Type, Accept, Authorization'
+  );
+  next();
+});
 
 const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 // generates short url from id
@@ -82,7 +95,7 @@ app.post("/", (req, res) => {
 				db.collection('long_url').doc(countStr).set({url: req.body.url});
 				db.collection('counter').doc('count').set({value: count});
 				const short_url = idToShortUrl(count);
-				res.send(`The short url for ${req.body.url} is: <a href='https://short-url-app.web.app/${short_url}'>https://masakichi4.github.io/short-url/${short_url}</a>`);
+				res.send(`The short url for ${req.body.url} is: <a href='https://us-central1-short-url-app.cloudfunctions.net/app/${short_url}'>https://us-central1-short-url-app.cloudfunctions.net/app/${short_url}</a>`);
 		    } else {
 		        // doc.data() will be undefined in this case
 		        console.log("Error: No counter");
@@ -95,10 +108,8 @@ app.post("/", (req, res) => {
 })
 
 app.get("/", (req, res) => {
-    const html = "<form action='/' method='post'><div>Convert long url here: <input name='url' type='text' value=''/><button type='submit'/>ok</button></div></form>"
+    const html = "<form action='/app' method='post'><div>Convert long url here: <input name='url' type='text' value=''/><button type='submit'/>ok</button></div></form>"
     res.status(200).send(html)
 })
 
-app.listen(port, () => {
-  console.log(`Listening to requests on http://localhost:${port}`)
-});
+exports.app = functions.https.onRequest(app);
